@@ -1,0 +1,52 @@
+# Configuración central del proyecto. Nada de esto se hardcodea en el código.
+semilla: 42
+
+rutas:
+  csv_crudo: data/raw/demanda_electricidad_original_mensual1.csv
+  base_datos: db/demanda.db
+  schema_sql: src/demanda/db/schema.sql
+
+etl:
+  columna_fecha: indice_tiempo
+  columnas_base: [demanda_total, temperatura_promedio, potencia_maxima]
+  columnas_sectoriales: [demanda_residencial, comercio_e_industria, grandes_usuarios]
+  # Todas las demás columnas del CSV se tratan como distribuidoras (formato largo).
+  tolerancia_suma_sectores: 0.001     # relativa: sectores deben sumar demanda_total
+  rango_temperatura: [-10, 45]        # °C, fuera de rango = error de validación
+  z_outlier: 3.0                      # solo informativo (advertencia)
+
+etiqueta:
+  # percentil_global    : umbrales sobre demanda_total (la serie crece con el tiempo: sesgo temporal)
+  # relativo_tendencia  : umbrales sobre demanda_total / media móvil centrada (RECOMENDADO)
+  metodo: relativo_tendencia
+  ventana_tendencia_meses: 12
+  q_alta: 0.75                        # > P75 => Alta
+  q_critica: 0.90                     # > P90 => Crítica
+  fraccion_test: 0.20                 # split cronológico (los últimos meses son test)
+
+modelado:
+  # Columnas que NUNCA pueden entrar como feature (derivan de la etiqueta o la identifican).
+  columnas_prohibidas_como_feature:
+    - fecha
+    - etiqueta
+    - split
+    - demanda_total
+    - demanda_ratio_tendencia
+  # Los sectores solo existen desde esta fecha (ver docs/data_dictionary.md).
+  desde_fecha_sectores: "2005-01-01"
+  # Conjuntos de features para el experimento de ablación (decisiones D2 y D6 de specs/01-datos.md).
+  # El runner recibe --features <nombre>. Ninguno incluye columnas prohibidas.
+  feature_sets:
+    base:                 # conjunto principal de la comparación entre modelos
+      numericas: [mes_sin, mes_cos, temperatura_promedio, potencia_maxima]
+      categoricas: [estacion]
+      solo_con_sectores: false
+    con_participaciones:  # agrega la estructura sectorial sin reconstruir demanda_total
+      numericas: [mes_sin, mes_cos, temperatura_promedio, potencia_maxima,
+                  part_residencial, part_comercio_industria, part_grandes_usuarios]
+      categoricas: [estacion]
+      solo_con_sectores: true     # usa solo filas desde 2005-01
+    sin_potencia:         # mide cuánto depende el modelo de potencia_maxima (corr 0,96 con la demanda)
+      numericas: [mes_sin, mes_cos, temperatura_promedio]
+      categoricas: [estacion]
+      solo_con_sectores: false

@@ -1,0 +1,28 @@
+# Dueños por archivo (ver PLAN_SDD.md §4 y GUIA_EQUIPO.md §5).
+# A = @Angelzam21 · B = @briansablich · C = @rosseab-bit
+# Regla: no se modifican archivos de otro integrante sin avisar.
+# Si hay varias reglas que coinciden, GitHub aplica la ÚLTIMA.
+
+# --- Integrante A: extract, transform, base de datos y Logistic Regression ---
+/src/demanda/etl/extract.py        @Angelzam21
+/src/demanda/etl/transform.py      @Angelzam21
+/src/demanda/db/                   @Angelzam21
+/src/demanda/models/logreg.py      @Angelzam21
+
+# --- Integrante B: validate, núcleo de modelado común y Random Forest ---
+/src/demanda/etl/validate.py       @briansablich
+/src/demanda/models/preprocessing.py @briansablich
+/src/demanda/models/splits.py      @briansablich
+/src/demanda/models/evaluate.py    @briansablich
+/src/demanda/models/train.py       @briansablich
+/src/demanda/models/rf.py          @briansablich
+
+# --- Integrante C: load, pipeline, visualización y XGBoost ---
+/src/demanda/etl/load.py           @rosseab-bit
+/src/demanda/etl/pipeline.py       @rosseab-bit
+/src/demanda/viz/                  @rosseab-bit
+/src/demanda/models/xgb.py         @rosseab-bit
+
+# --- Contratos y configuración: los tres ---
+/specs/                            @Angelzam21 @briansablich @rosseab-bit
+/config/                           @Angelzam21 @briansablich @rosseab-bit

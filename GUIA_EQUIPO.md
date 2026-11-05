@@ -163,6 +163,18 @@ Después pegás el **prompt de la ficha** de la tarea.
 7. **Reproducibilidad:** cualquiera regenera la BD y los resultados con `scripts/run_all.py`.
 8. **Revisar PRs ajenos dentro de las 24 h**: es parte del trabajo.
 
+### CI y check obligatorio (T-15)
+`.github/workflows/ci.yml` corre en cada push y PR un único job llamado **`test`**: instala dependencias, ejecuta `ruff check src tests` y `pytest -q`. Si el lint o un test fallan, el job se pone rojo.
+
+Para que ese job bloquee el merge hay que marcarlo como obligatorio (lo hace quien administra el repo, una sola vez, después de que la CI haya corrido al menos una vez):
+1. `Settings → Rules → Rulesets → rules_main`.
+2. En *Enforcement status* elegir **Active**.
+3. Activar **Require status checks to pass**, pulsar *Add checks* y elegir **`test`** (solo aparece si ya se ejecutó una vez).
+4. Verificar que sigan activas *Require a pull request before merging* (1 aprobación), *Block force pushes* y *Restrict deletions*.
+5. Probar con un PR que rompa el lint a propósito: el botón de merge debe quedar bloqueado.
+
+Hasta que entre el primer test, el workflow acepta que `pytest` no encuentre ninguno (código 5). Cuando exista el primer test hay que cambiar esa línea por `pytest -q` y borrar `tests/.gitkeep`.
+
 ### Checklist del revisor (copiar en cada review)
 - [ ] El PR cierra el issue correcto y cumple su entregable.
 - [ ] Hay 3+ commits con mensajes claros y el ID de tarea.

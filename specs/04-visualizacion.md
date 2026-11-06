@@ -115,18 +115,18 @@ Los nombres de la columna "Verificación" son **propuestos**: los tests se escri
 ## 8. Decisiones abiertas (cerrar en T-01 con los 3)
 | ID | Decisión | Con quién | Propuesta |
 |---|---|---|---|
-| V-D1 | **Formato de `compare_runs()`**: columnas exactas y si devuelve una fila por corrida | A (CMP-2) | Una fila por `run_id`, con las columnas de `metricas_modelo` más `features_usadas` |
-| V-D2 | **Feature set de cada corrida**: `metricas_modelo` no lo guarda, solo `config_modelo.features_usadas` (lista JSON) | A (T-03, DB-2) | Agregar columna `feature_set` a `config_modelo` (cambio de contrato: PR previo a `specs/00-contratos.md`) |
+| V-D1 | **Formato de `compare_runs()`**: columnas exactas y si devuelve una fila por corrida | A (CMP-2) | **Acordada** (a ratificar en el PR): una fila por `run_id`, con las columnas de `metricas_modelo` más `feature_set` y `features_usadas`, e incluyendo `matriz_confusion` ya parseada (la necesita `plot_matrices_confusion`). A entrega la lista final de columnas por escrito antes de empezar CMP-2 |
+| V-D2 | **Feature set de cada corrida**: `metricas_modelo` no lo guarda, solo `config_modelo.features_usadas` (lista JSON) | A (T-03, DB-2), B (MC-4) | **Acordada** (a ratificar en el PR): agregar la columna `feature_set` a `config_modelo`. Es un cambio de contrato: primero el PR a `specs/00-contratos.md`, después `schema.sql` (T-03), `save_run` (DB-2) y el `config_dict` que arma el runner (MC-4) |
 | V-D3 | **Librería de gráficos**: matplotlib o plotly (ambas están en `requirements.txt`) | C | A definir. Streamlit soporta las dos |
 | V-D4 | **Texto de la advertencia de incertidumbre** (R4) | A, B, C (CMP-1) | "test = N meses; k Alta", con cifras tomadas de la base y no escritas a mano |
 | V-D5 | **Formato de `run_id`** visible en el dashboard | A (DB-2), B (MC-4) | `<modelo>_<feature_set>_<timestamp>`, como sugiere la ficha XG-6 |
-| V-D6 | **Quién lee la base en el dashboard**: funciones de `repository.py` (A) o consultas propias de solo lectura en `viz/` | A, C | Funciones de lectura en `repository.py`, para tener una sola puerta de acceso a la base |
+| V-D6 | **Quién lee la base en el dashboard**: funciones de `repository.py` (A) o consultas propias de solo lectura en `viz/` | A, C | **Acordada** (a ratificar en el PR): las lecturas van en `repository.py`, para tener una sola puerta de acceso a la base. C escribe las consultas que necesita (`predicciones`, `metricas_modelo`, `config_modelo`, `etl_auditoria`) en su propio PR y A lo revisa, porque `/src/demanda/db/` es de A según `CODEOWNERS`. Falta definir bajo qué tarea e issue se hace |
 | V-D7 | **Unidades** (D7 de `PLAN_SDD.md`): GWh o MWh, y MW | A (T-02) | Mientras no se confirme, "PENDIENTE" (R3) |
 
 ## 9. Contrato con otros módulos
 | Módulo | Quién | Qué espera la visualización | Qué ofrece la visualización |
 |---|---|---|---|
-| `repository.py` (`load_clean_data`, `compare_runs`) | A | DataFrames con las columnas de §3 y §4. **El formato de `compare_runs()` está sin cerrar (V-D1)** | — |
+| `repository.py` (`load_clean_data`, `compare_runs`) | A | DataFrames con las columnas de §3 y §4. **El formato de `compare_runs()` está acordado en V-D1; las columnas exactas las confirma A** | — |
 | `repository.save_run()` | A / modelos | Que guarde `prob_*` por nombre de clase y la matriz de confusión como JSON en orden Normal / Alta / Crítica | — |
 | `tests/fixtures.py` (VIZ-2) | C | — | `make_fixture_db(path)`: base con las 3 tablas y datos ficticios (prefijo `fixture_`), para que A y C prueben sin esperar los modelos |
 | `viz/plots.py` | C | — | Funciones puras de §4, reutilizables en notebooks (A, B, C) |

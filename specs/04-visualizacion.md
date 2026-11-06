@@ -38,3 +38,59 @@ Reglas de lectura:
 - `matriz_confusion` se guarda como JSON en el orden Normal / Alta / Crítica y se parsea al leerla.
 - Los valores NULL (por ejemplo sectores anteriores a 2005) se muestran como vacíos, no como cero.
 - La conexión a la base es de **solo lectura**: el dashboard nunca escribe.
+
+## 4. Gráficos (`src/demanda/viz/plots.py`)
+Todas son **funciones puras**: reciben DataFrames ya leídos, devuelven una figura y no leen la base ni llaman a `plt.show()`. Así se pueden probar sin base de datos y reutilizar en el dashboard.
+
+### 4.1 Gráficos de datos (VIZ-1)
+Entrada: un DataFrame con las columnas de `datos_limpios` indicadas.
+
+| Función | Columnas que necesita | Qué muestra |
+|---|---|---|
+| `plot_clases_por_split` | `etiqueta`, `split` | Cantidad de meses de cada clase en train y en test |
+| `plot_demanda_vs_temperatura` | `temperatura_promedio`, `demanda_total`, `etiqueta` | Dispersión coloreada por clase |
+| `plot_estacionalidad` | `mes`, `anio`, `demanda_total` | Perfil de demanda por mes, con la banda que cubre los años |
+| `plot_serie_con_criticos` | `fecha`, `demanda_total`, `etiqueta`, `split` | Serie de demanda, meses Crítica marcados y línea de corte entre train y test |
+
+### 4.2 Gráficos de comparación (CMP-3)
+Entrada: el DataFrame que devuelve `compare_runs()` (CMP-2, de A) y, para las matrices, la columna `matriz_confusion` ya parseada. **El formato exacto se cierra en T-01** (ver §8).
+
+| Función | Qué muestra |
+|---|---|
+| `plot_metricas_por_modelo` | Barras agrupadas de accuracy, precision, recall y F1 macro por modelo |
+| `plot_matrices_confusion` | Una matriz por modelo, lado a lado y con la misma escala |
+| `plot_f1_por_clase` | F1 de Normal, Alta y Crítica por modelo |
+| `plot_tiempos` | Tiempo de entrenamiento por modelo |
+| `plot_ablacion` | F1 macro por modelo y por feature set (`base`, `con_participaciones`, `sin_potencia`) |
+
+## 5. Dashboard (`src/demanda/viz/app.py`)
+Se inicia con `streamlit run src/demanda/viz/app.py`. Lee `db/demanda.db` y usa `@st.cache_data` para no releer en cada interacción.
+
+### 5.1 Barra lateral (filtros)
+| Filtro | Efecto |
+|---|---|
+| Modelo(s) | Qué corridas se muestran |
+| Feature set | Filtra las corridas por conjunto de features (ver decisión abierta en §8) |
+| Rango de fechas | Acota los gráficos de datos y la tabla de predicciones |
+| Clase | Muestra solo los meses de esa clase real o predicha |
+
+### 5.2 Pestañas
+| Pestaña | Contenido | Gráficos / tablas |
+|---|---|---|
+| **Datos** | Exploración de la serie y de las clases | Los 4 gráficos de §4.1 |
+| **Modelos** | Una corrida por vez: métricas, matriz de confusión, parámetros y features usadas | Tabla de `metricas_modelo`, matriz de confusión, datos de `config_modelo` |
+| **Comparación** | Los modelos frente a frente | Los 5 gráficos de §4.2 y una tabla comparativa |
+| **Predicciones** | Cada mes con su clase real, la predicha y las probabilidades | Tabla filtrable y serie con aciertos y errores |
+| **Calidad de datos** | Qué cargó el ETL | Archivo, SHA-256, filas, nulos por tramo, advertencias y umbrales de la etiqueta (de `etl_auditoria`) |
+
+## 6. Reglas transversales
+| # | Regla |
+|---|---|
+| R1 | **Idioma:** títulos, ejes, leyendas y mensajes en español |
+| R2 | **Accesibilidad:** las clases se distinguen por **color y por marcador o forma**, no solo por color |
+| R3 | **Unidades:** mientras D7 no esté resuelta, los ejes de demanda y potencia dicen "PENDIENTE". No se inventan unidades |
+| R4 | **Incertidumbre:** todo gráfico de comparación indica `n_test`. Si corresponde, agrega una nota de muestra chica, con el texto exacto acordado en CMP-1 (propuesta de la ficha: "test = 62 meses; 3 Alta", cifras a confirmar con el ETL real) |
+| R5 | **Estados vacíos:** si la base no existe o no hay corridas, se muestra un mensaje claro con el comando para generarlas (`python scripts/run_etl.py` o `python -m demanda.models.train …`), nunca un traceback |
+| R6 | **Solo lectura:** el dashboard no escribe en la base ni entrena modelos |
+| R7 | **Sin cifras propias:** toda métrica mostrada sale de `metricas_modelo`. No se recalcula nada en la capa visual |
+| R8 | **Mismo criterio de color:** cada clase tiene siempre el mismo color y marcador en todos los gráficos |

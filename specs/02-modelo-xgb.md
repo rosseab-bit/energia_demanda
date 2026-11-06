@@ -81,3 +81,27 @@ Los nombres de la columna "Verificación" son **propuestos**: los tests se escri
 | XG-7 | Sección en `docs/model_card.md` con limitaciones honestas | Revisión en el PR |
 
 **Sobre SHAP:** la ficha lo deja como opcional. La librería `shap` **no está** en `requirements.txt`, así que solo se incluye si el equipo la agrega antes.
+
+## 5. Contrato con el runner: `sample_weight` (pendiente de confirmación de B)
+Hoy el contrato (`specs/00-contratos.md §8.1`) dice: el módulo declara `NEEDS_SAMPLE_WEIGHT = True`, y el runner (MC-4, de **B**) calcula `compute_sample_weight("balanced", y_train)` y lo pasa como `fit_params={"clf__sample_weight": ...}`.
+
+### 5.1 Qué se comprobó
+Con scikit-learn 1.9.1 (versión instalada al redactar esta spec) se probó con un estimador de prueba: si el runner pasa el vector de pesos **completo**, `cross_val_score` lo **recorta por fold**, y cada `fit` recibe tantas filas de pesos como filas de datos. O sea, **la alineación fila a fila funciona**. Esto se vuelve a verificar con un test en XG-4 y con la versión que fije el equipo.
+
+### 5.2 Cuál es el riesgo real
+El problema no es la alineación, sino **cómo se calcularon los valores**. Un peso "balanceado" depende de cuántas filas tiene cada clase. Si se calcula con todo `train` y después se recorta, el peso de cada fila refleja también las frecuencias de las filas de validación de ese fold. Es una fuga leve, pero es una fuga, y la regla 6 de `CLAUDE.md` pide evitarla.
+
+### 5.3 Dos formas de resolverlo
+| Opción | Cómo funciona | A favor | En contra |
+|---|---|---|---|
+| **1. El runner pasa el vector completo** (contrato actual) | Calcula los pesos una vez con todo `train` | Ya está escrito en el contrato; el runner decide | Fuga leve descrita en §5.2 |
+| **2. El propio estimador calcula los pesos en su `fit`** | El wrapper de XGBoost (XG-2) llama a `compute_sample_weight("balanced", y)` con las filas que recibe en cada `fit` | Sin fuga: en cada fold usa solo sus filas de entrenamiento. El runner no necesita saber nada de pesos | El comportamiento queda dentro del módulo de C, y el runner no lo ve |
+
+**Propuesta de C:** la opción 2. Evita la fuga y simplifica el runner. Con esa opción `NEEDS_SAMPLE_WEIGHT` ya no hace falta (el runner no tiene nada que pasar), y habría que quitarlo de `00-contratos.md §8.1` con un PR previo.
+
+### 5.4 Preguntas para B
+1. ¿Prefiere la opción 1 o la 2? La decisión afecta al runner (MC-4), que es de B.
+2. Si queda la opción 1: ¿el runner trata la ausencia del atributo como `False`? (`00-contratos.md §8.1` lo supone, pero B no lo confirmó.)
+3. Si queda la opción 2: ¿está de acuerdo con quitar `NEEDS_SAMPLE_WEIGHT` del contrato?
+
+Mientras no haya respuesta, **XG-2 y XG-3 se pueden hacer con cualquiera de las dos**: el wrapper expone un `fit` que acepta `sample_weight` opcional. La decisión se necesita antes de XG-4.

@@ -5,7 +5,7 @@ Cada fila enlaza al issue con su número. Responsables: A = Angelzam21, B = bria
 
 Para revisar el equilibrio de aportes: `git shortlog -sn --no-merges`.
 
-**Progreso: 3 de 50 tareas.**
+**Progreso: 4 de 50 tareas.**
 
 ## Fase 0 - Fundacion
 
@@ -55,7 +55,7 @@ Para revisar el equilibrio de aportes: `git shortlog -sn --no-merges`.
 | [ ] | RF-5 | #35 | B | [rf] Evaluacion en test y ablacion de features (base, con_participaciones, sin_potencia) |
 | [ ] | RF-6 | #36 | B | [rf] Persistencia en Tablas 2 y 3 con run_id propio |
 | [ ] | RF-7 | #37 | B | [rf] Notebook e informe del modelo: interpretacion y analisis de errores |
-| [ ] | XG-1 | #38 | C | [xgb] Spec del modelo: justificacion, espacio de busqueda, desbalance |
+| [x] | XG-1 | #38 | C | [xgb] Spec del modelo: justificacion, espacio de busqueda, desbalance |
 | [ ] | XG-2 | #39 | C | [xgb] Modulo del modelo (contrato NAME/SEARCH/get_estimator/get_param_grid) + test |
 | [ ] | XG-3 | #40 | C | [xgb] Baseline sin tuning con el pipeline comun (set base) |
 | [ ] | XG-4 | #41 | C | [xgb] Busqueda de hiperparametros (RandomizedSearchCV) con CV temporal y scoring f1_macro |

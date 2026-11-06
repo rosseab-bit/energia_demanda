@@ -94,3 +94,42 @@ Se inicia con `streamlit run src/demanda/viz/app.py`. Lee `db/demanda.db` y usa 
 | R6 | **Solo lectura:** el dashboard no escribe en la base ni entrena modelos |
 | R7 | **Sin cifras propias:** toda métrica mostrada sale de `metricas_modelo`. No se recalcula nada en la capa visual |
 | R8 | **Mismo criterio de color:** cada clase tiene siempre el mismo color y marcador en todos los gráficos |
+
+## 7. Criterios de aceptación
+Los nombres de la columna "Verificación" son **propuestos**: los tests se escriben antes de implementar (SDD) y pueden cambiar de nombre.
+
+| ID | Criterio | Verificación |
+|---|---|---|
+| VIZ-A1 | Cada función de §4.1 devuelve una figura y no lanza error con la fixture de 36 meses (VIZ-2) ni con la base real | `test_plots_datos_con_fixture`, `test_plots_datos_con_bd_real` |
+| VIZ-A2 | Las funciones de `plots.py` no leen la base ni llaman a `plt.show()` | `test_plots_son_puras` |
+| VIZ-A3 | Cada función de §4.2 devuelve una figura con la fixture (3 corridas: logreg, rf, xgb) | `test_plots_comparacion_con_fixture` |
+| VIZ-A4 | Las clases se distinguen por color **y** marcador o forma (R2) | `test_clases_con_marcador_distinto` |
+| VIZ-A5 | Los gráficos de comparación incluyen `n_test` (R4) | `test_comparacion_muestra_n_test` |
+| VIZ-A6 | Sin base o sin corridas, el dashboard muestra un mensaje con el comando para generarlas y no lanza excepción (R5) | `test_app_sin_bd`, `test_app_sin_corridas` |
+| VIZ-A7 | El dashboard recorre las 5 pestañas sin excepción sobre la fixture | `test_app_cinco_pestanas` (con `streamlit.testing.v1.AppTest`) |
+| VIZ-A8 | Las probabilidades se leen por nombre de clase (`prob_normal`, `prob_alta`, `prob_critica`), no por posición | `test_probabilidades_por_nombre` |
+| VIZ-A9 | La matriz de confusión se parsea desde el JSON en orden Normal / Alta / Crítica | `test_matriz_confusion_parseo` |
+| VIZ-A10 | El dashboard no escribe en la base (conexión de solo lectura, R6) | `test_app_no_escribe_en_bd` |
+| VIZ-A11 | Los ejes de demanda dicen "PENDIENTE" mientras D7 esté abierta (R3) | `test_unidades_pendientes` |
+
+## 8. Decisiones abiertas (cerrar en T-01 con los 3)
+| ID | Decisión | Con quién | Propuesta |
+|---|---|---|---|
+| V-D1 | **Formato de `compare_runs()`**: columnas exactas y si devuelve una fila por corrida | A (CMP-2) | Una fila por `run_id`, con las columnas de `metricas_modelo` más `features_usadas` |
+| V-D2 | **Feature set de cada corrida**: `metricas_modelo` no lo guarda, solo `config_modelo.features_usadas` (lista JSON) | A (T-03, DB-2) | Agregar columna `feature_set` a `config_modelo` (cambio de contrato: PR previo a `specs/00-contratos.md`) |
+| V-D3 | **Librería de gráficos**: matplotlib o plotly (ambas están en `requirements.txt`) | C | A definir. Streamlit soporta las dos |
+| V-D4 | **Texto de la advertencia de incertidumbre** (R4) | A, B, C (CMP-1) | "test = N meses; k Alta", con cifras tomadas de la base y no escritas a mano |
+| V-D5 | **Formato de `run_id`** visible en el dashboard | A (DB-2), B (MC-4) | `<modelo>_<feature_set>_<timestamp>`, como sugiere la ficha XG-6 |
+| V-D6 | **Quién lee la base en el dashboard**: funciones de `repository.py` (A) o consultas propias de solo lectura en `viz/` | A, C | Funciones de lectura en `repository.py`, para tener una sola puerta de acceso a la base |
+| V-D7 | **Unidades** (D7 de `PLAN_SDD.md`): GWh o MWh, y MW | A (T-02) | Mientras no se confirme, "PENDIENTE" (R3) |
+
+## 9. Contrato con otros módulos
+| Módulo | Quién | Qué espera la visualización | Qué ofrece la visualización |
+|---|---|---|---|
+| `repository.py` (`load_clean_data`, `compare_runs`) | A | DataFrames con las columnas de §3 y §4. **El formato de `compare_runs()` está sin cerrar (V-D1)** | — |
+| `repository.save_run()` | A / modelos | Que guarde `prob_*` por nombre de clase y la matriz de confusión como JSON en orden Normal / Alta / Crítica | — |
+| `tests/fixtures.py` (VIZ-2) | C | — | `make_fixture_db(path)`: base con las 3 tablas y datos ficticios (prefijo `fixture_`), para que A y C prueben sin esperar los modelos |
+| `viz/plots.py` | C | — | Funciones puras de §4, reutilizables en notebooks (A, B, C) |
+| `viz/app.py` | C | Una base creada por `run_etl.py` y por `train.py` | Dashboard de solo lectura |
+
+Si hay que cambiar una columna de las tablas de §3, primero se hace el PR a `specs/00-contratos.md` y después se actualiza esta spec.
